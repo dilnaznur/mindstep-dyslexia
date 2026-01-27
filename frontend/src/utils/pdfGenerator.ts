@@ -2,16 +2,8 @@
  * PDF Report Generator for MindStep Assessment Results
  * Uses jsPDF for client-side PDF generation (no server required)
  */
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-
-// Extend jsPDF with autotable
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: Record<string, unknown>) => jsPDF;
-    lastAutoTable: { finalY: number };
-  }
-}
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export interface ReportData {
   date: Date;
@@ -111,7 +103,7 @@ export function generatePDFReport(data: ReportData): void {
     ['Attention', `${data.metrics.attention.toFixed(1)}/100`],
   ];
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: yPos,
     head: [['Assessment Area', 'Score']],
     body: metricsData,
@@ -133,7 +125,7 @@ export function generatePDFReport(data: ReportData): void {
   });
 
   // === PRIMARY INDICATORS ===
-  yPos = doc.lastAutoTable.finalY + 15;
+  yPos = (doc as any).lastAutoTable.finalY + 15;
 
   doc.setFontSize(14);
   doc.setTextColor(44, 62, 80);
