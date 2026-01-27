@@ -153,10 +153,11 @@ function AppContent() {
         </div>
       )}
 
-      {/* Main Content */}
-      <AnimatePresence mode="wait">
-        {/* Welcome Screen */}
-        {currentStep === 'welcome' && (
+      {/* Main Content - Add padding when header is visible to prevent overlap */}
+      <div className={currentStep !== 'welcome' && currentStep !== 'dashboard' ? 'pt-24' : ''}>
+        <AnimatePresence mode="wait">
+          {/* Welcome Screen */}
+          {currentStep === 'welcome' && (
           <motion.div
             key="welcome"
             initial={{ opacity: 0 }}
@@ -396,7 +397,8 @@ function AppContent() {
             <Dashboard />
           </motion.div>
         )}
-      </AnimatePresence>
+        </AnimatePresence>
+      </div>
 
       <style>{`
         .glass-card {

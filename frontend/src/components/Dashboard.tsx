@@ -22,7 +22,6 @@ import {
 import {
   AlertCircle,
   CheckCircle,
-  FileText,
   Download,
   Book,
   Pencil,
@@ -34,6 +33,7 @@ import {
 import { useDiagnosis } from '@/context/DiagnosisProvider';
 import confetti from 'canvas-confetti';
 import { ALL_EXERCISES } from '@/data/exercises';
+import { generatePDFReport, ReportData } from '@/utils/pdfGenerator';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -72,6 +72,39 @@ export default function Dashboard() {
   };
 
   const recommendedExercises = getRecommendedExercises();
+
+  // Handle PDF download
+  const handleDownloadPDF = () => {
+    if (!state.final_score || !state.combined_explanation) return;
+
+    const reportData: ReportData = {
+      date: new Date(),
+      riskScore: state.final_score,
+      classification: state.final_classification || 'Unknown',
+      confidence: state.combined_explanation.confidence,
+      metrics: {
+        reading: state.backend_prediction
+          ? 100 - state.backend_prediction.risk_score
+          : 50,
+        eye_tracking: state.reading_data?.regression_index
+          ? (1 - state.reading_data.regression_index) * 100
+          : 50,
+        handwriting: state.writing_data ? 70 : 50,
+        memory: state.chatbot_data ? state.chatbot_data.memory_score * 10 : 50,
+        attention: state.chatbot_data ? state.chatbot_data.attention_score * 10 : 50,
+      },
+      primaryIndicators: state.combined_explanation.primary_factors,
+      detailedBreakdown: state.combined_explanation.detailed_breakdown,
+      recommendation: state.combined_explanation.recommendation,
+    };
+
+    try {
+      generatePDFReport(reportData);
+    } catch (error) {
+      console.error('Failed to generate PDF:', error);
+      alert('Failed to generate PDF report. Please try again.');
+    }
+  };
 
   // Count-up animation for risk score
   useEffect(() => {
@@ -301,18 +334,40 @@ export default function Dashboard() {
             </h3>
             <ResponsiveContainer width="100%" height={300}>
               <RadarChart data={radarData}>
-                <PolarGrid stroke="#CBD5E1" />
+                <PolarGrid
+                  stroke="#94A3B8"
+                  strokeWidth={1.5}
+                  strokeDasharray="3 3"
+                />
                 <PolarAngleAxis
                   dataKey="metric"
-                  tick={{ fill: '#64748B', fontSize: 14 }}
+                  tick={{
+                    fill: '#1E293B',
+                    fontSize: 13,
+                    fontWeight: 600
+                  }}
                 />
-                <PolarRadiusAxis angle={90} domain={[0, 100]} />
+                <PolarRadiusAxis
+                  angle={90}
+                  domain={[0, 100]}
+                  tick={{ fill: '#475569', fontSize: 11 }}
+                  stroke="#CBD5E1"
+                />
                 <Radar
                   name="Performance"
                   dataKey="value"
-                  stroke="#A8E6CF"
-                  fill="#A8E6CF"
-                  fillOpacity={0.6}
+                  stroke="#2563EB"
+                  strokeWidth={3}
+                  fill="#3B82F6"
+                  fillOpacity={0.5}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: 'rgba(255, 255, 255, 0.95)',
+                    border: '2px solid #3B82F6',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                  }}
                 />
               </RadarChart>
             </ResponsiveContainer>
@@ -532,14 +587,15 @@ export default function Dashboard() {
           transition={{ delay: 0.7 }}
           className="flex flex-wrap gap-4 justify-center"
         >
-          <button className="flex items-center gap-2 bg-soft-blue hover:bg-blue-400 text-white font-bold py-3 px-8 rounded-full transition-transform hover:scale-105">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleDownloadPDF}
+            className="flex items-center gap-2 bg-gradient-to-r from-soft-blue to-blue-500 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-3 px-8 rounded-full transition-all shadow-lg"
+          >
             <Download className="w-5 h-5" />
             Download PDF Report
-          </button>
-          <button className="flex items-center gap-2 bg-white hover:bg-gray-100 text-text-primary font-bold py-3 px-8 rounded-full transition-transform hover:scale-105 border-2 border-gray-300">
-            <FileText className="w-5 h-5" />
-            Email Report
-          </button>
+          </motion.button>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}

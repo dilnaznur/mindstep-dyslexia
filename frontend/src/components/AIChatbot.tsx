@@ -4,12 +4,40 @@
  */
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bot, Send, Loader } from 'lucide-react';
+import { Bot, Send, Loader, MessageSquare, HelpCircle, RotateCcw, Gauge } from 'lucide-react';
 import {
   sendChatMessage,
   analyzeChatbotConversation,
 } from '@/lib/gemini';
 import { ChatMessage, ChatbotAnalysis } from '@/types';
+
+// Quick reply options for children
+const QUICK_REPLIES = [
+  {
+    id: 'short-questions',
+    text: 'Short questions please',
+    icon: MessageSquare,
+    message: 'Please ask me short, simple questions',
+  },
+  {
+    id: 'help-me',
+    text: 'I need help',
+    icon: HelpCircle,
+    message: 'I need help understanding',
+  },
+  {
+    id: 'repeat',
+    text: 'Can you repeat?',
+    icon: RotateCcw,
+    message: 'Can you repeat that?',
+  },
+  {
+    id: 'slow-down',
+    text: 'Go slower please',
+    icon: Gauge,
+    message: 'Please go slower, I need more time',
+  },
+];
 
 interface AIChatbotProps {
   onComplete: (analysis: ChatbotAnalysis) => void;
@@ -282,6 +310,35 @@ export default function AIChatbot({ onComplete, onSkip }: AIChatbotProps) {
 
               <div ref={messagesEndRef} />
             </div>
+
+            {/* Quick Replies */}
+            {messages.length > 0 && messages.length <= 4 && !isLoading && (
+              <div className="mb-3 pb-3 border-b border-gray-200/50">
+                <p className="text-xs text-text-secondary mb-2">
+                  Quick responses:
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {QUICK_REPLIES.map((reply) => {
+                    const Icon = reply.icon;
+                    return (
+                      <motion.button
+                        key={reply.id}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => {
+                          setInputValue(reply.message);
+                        }}
+                        disabled={isLoading}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 bg-mint/20 hover:bg-mint/40 border border-mint/60 rounded-full text-sm text-text-primary transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <Icon className="w-4 h-4" />
+                        <span>{reply.text}</span>
+                      </motion.button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Input Area */}
             <div className="flex gap-2">
