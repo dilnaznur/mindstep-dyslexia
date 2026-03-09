@@ -13,15 +13,11 @@ import os
 from dotenv import load_dotenv
 from pathlib import Path
 
-# Явно указываем путь к .env
+# Load .env in development (ignored in production if not present)
 env_path = Path(__file__).parent / '.env'
 load_dotenv(dotenv_path=env_path)
 
-# Добавьте для отладки
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-print(f"🔑 API Key loaded: {'Yes' if GEMINI_API_KEY else 'NO - CHECK .env FILE'}")
-if GEMINI_API_KEY:
-    print(f"   First 10 chars: {GEMINI_API_KEY[:10]}...")
 
 from schemas import (
     PredictionRequest,
@@ -49,16 +45,19 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# Configure CORS for React frontend
+# Build CORS allowed origins from env var + defaults
+_default_origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+_extra_origins = os.getenv("CORS_ORIGINS", "").split(",")
+ALLOWED_ORIGINS = _default_origins + [o.strip() for o in _extra_origins if o.strip()]
+
+# Configure CORS — use allow_origin_regex for wildcard Vercel support
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",  # React dev server
-        "http://127.0.0.1:5173",
-        "https://mindstep-dyslexia-prime.vercel.app",  # Alternative localhost
-        "https://*.vercel.app"  # Для Vercel
-          # Временно для тестирования (потом уберём)
-    ],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -415,25 +414,7 @@ async def global_exception_handler(request, exc):
             "error_type": type(exc).__name__
         }
     )
-@app.options("/api/gemini")
-async def options_gemini(request: Request):
-    """Handle CORS preflight for Gemini endpoint"""
-    return JSONResponse(
-        content={"status": "ok"},
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "POST, OPTIONS",
-            "Access-Control-Allow-Headers": "*",
-        }
-    )
-
-
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(
-        "main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,  # Enable auto-reload during development
-        log_level="info"
-    )
+    port = int(os.getenv("PORT", "8000"))
+    uvicorn.run("main:app", host="0.0.0.0", port=port)

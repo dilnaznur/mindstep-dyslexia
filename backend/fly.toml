@@ -1,0 +1,29 @@
+# fly.toml — Fly.io configuration for MindStep API backend
+
+app = "mindstep-api"
+primary_region = "fra"                 # Frankfurt — low-latency for EU
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  # Additional allowed CORS origins (comma-separated).
+  # Vercel *.vercel.app subdomains are allowed automatically.
+  CORS_ORIGINS = "https://mindstep-dyslexia-prime.vercel.app"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [http_service.concurrency]
+    type = "requests"
+    hard_limit = 250
+    soft_limit = 200
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1
